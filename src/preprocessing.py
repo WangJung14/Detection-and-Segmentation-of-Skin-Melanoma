@@ -73,55 +73,55 @@ def enhance_contrast_clahe(image , clip_limit=1.2 , grid_size=(8,8)):
     return final_image, cl
 
 
-if __name__ == "__main__":
-    # Đọc ảnh gốc (thay đường dẫn bằng ảnh thực tế của em)
-    img = cv2.imread("../data/toy_data/melanoma/ISIC_0000074.jpg")
+def boost_faint_edges(l_channel):
+    """
+    Tăng cường sắc độ viền mờ (Thuật toán phát triển vùng đệm).
+    Tìm lõi khối u, khoanh vùng viền mờ và tăng độ đậm cho vùng viền đó
+    nhằm tạo "bức tường" chặn thuật toán Snakes.
+    """
+    # Bước 1: Tìm vùng "Cực đại" (Chỉ bắt những pixel cực kỳ đen)
+    _, core_mask = cv2.threshold(l_channel, 70, 255, cv2.THRESH_BINARY_INV)
 
-    if img is not None:
-        # 1. Chạy Pipeline
-        clean_img, hair_mask = remove_hair(img, kernel_size=15, inpaint_rad=3)
-        clahe_color_img, clahe_gray_l_channel = enhance_contrast_clahe(clean_img, clip_limit=1.2)
-        smooth_l_channel = cv2.GaussianBlur(clahe_gray_l_channel, (5, 5), 0)
+    # Bước 2: Bắt luôn cả vùng "Mờ mờ" (Lấy lõi + viền mờ)
+    _, broad_mask = cv2.threshold(l_channel, 120, 255, cv2.THRESH_BINARY_INV)
 
-        # 2. Xử lý đồng bộ số kênh màu (Channel synchronization)
-        # Chuyển L-Channel (1 kênh) thành 3 kênh (ảo) để có thể ghép với các ảnh màu
-        clahe_gray_3_channels = cv2.cvtColor(smooth_l_channel, cv2.COLOR_GRAY2BGR)
+    # Bước 3: Tìm chính xác "Vùng đệm mờ mờ" (Dùng phép XOR)
+    faint_zone = cv2.bitwise_xor(broad_mask, core_mask)
 
-        # 3. Hàm phụ trợ: Resize ảnh
-        scale = 0.3
+    # Bước 4: Nhuộm đen vùng đệm
+    boosted_l_channel = l_channel.copy()
+
+    # Dùng numpy array để chứa giá trị cần trừ đi (40 đơn vị độ sáng)
+    darkening_value = np.zeros_like(l_channel)
+    darkening_value[faint_zone == 255] = 40
+
+    # Dùng cv2.subtract để tránh lỗi số âm (underflow)
+    boosted_l_channel = cv2.subtract(boosted_l_channel, darkening_value)
+
+    # Làm mượt nhẹ để vết nhuộm không bị vỡ hạt
+    boosted_l_channel = cv2.GaussianBlur(boosted_l_channel, (3, 3), 0)
+
+    return boosted_l_channel, faint_zone
 
 
-        def resize_img(image, scale_factor):
-            width = int(image.shape[1] * scale_factor)
-            height = int(image.shape[0] * scale_factor)
-            return cv2.resize(image, (width, height))
+def apply_circular_mask(image, radius_reduction=0.9):
+    """
+    Loại bỏ hiệu ứng đen 4 góc (Vignetting) của ống kính máy soi da.
+    Tẩy trắng các vùng bên ngoài vòng tròn trung tâm.
+    """
+    h, w = image.shape[:2]
+    center = (w // 2, h // 2)
+    radius = int(min(h, w) / 2 * radius_reduction)
 
+    # Tạo mặt nạ hình tròn
+    circular_mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.circle(circular_mask, center, radius, 255, -1)
 
-        img_res = resize_img(img, scale)
-        clean_res = resize_img(clean_img, scale)
-        clahe_color_res = resize_img(clahe_color_img, scale)
-        clahe_gray_res = resize_img(clahe_gray_3_channels, scale)
+    # Ép 4 góc thành màu trắng (255) để K-Means không bao giờ nhầm là khối u
+    result = image.copy()
+    if len(image.shape) == 3:  # Nếu là ảnh màu
+        result[circular_mask == 0] = (255, 255, 255)
+    else:  # Nếu là ảnh xám
+        result[circular_mask == 0] = 255
 
-        # 4. Gắn nhãn (Text) lên từng ảnh đã resize
-        # Tham số: (Ảnh, "Nội dung", (Tọa độ X, Y), Font, Size, (Màu BGR), Độ dày)
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(img_res, "1. Original", (10, 30), font, 0.8, (0, 255, 0), 2)
-        cv2.putText(clean_res, "2. DullRazor", (10, 30), font, 0.8, (0, 255, 0), 2)
-        cv2.putText(clahe_color_res, "3. CLAHE Color", (10, 30), font, 0.8, (0, 255, 0), 2)
-        cv2.putText(clahe_gray_res, "4. Smoothed L-Channel", (10, 30), font, 0.8, (0, 255, 0), 2)
-
-        # 5. Nối ảnh (Concatenate)
-        # Cách 1: Nối ngang toàn bộ 4 ảnh (Dài thò lò)
-        # combined_img = np.hstack((img_res, clean_res, clahe_color_res, clahe_gray_res))
-
-        # Cách 2 (Khuyên dùng): Ghép thành lưới 2x2 để hiển thị đẹp nhất trên màn hình laptop
-        top_row = np.hstack((img_res, clean_res))  # Hàng trên
-        bottom_row = np.hstack((clahe_color_res, clahe_gray_res))  # Hàng dưới
-        grid_combined = np.vstack((top_row, bottom_row))  # Ghép 2 hàng lại theo chiều dọc
-
-        # 6. Hiển thị xem thành quả
-        cv2.imshow("Preprocessing Pipeline Grid", grid_combined)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-    else:
-        print("Không tìm thấy ảnh! Hãy kiểm tra lại đường dẫn.")
+    return result
