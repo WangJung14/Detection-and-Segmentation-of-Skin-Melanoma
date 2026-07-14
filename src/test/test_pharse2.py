@@ -9,7 +9,7 @@ from src.features import (calculate_asymmetry, calculate_border_irregularity,
                                calculate_color_variegation, calculate_diameter)
 
 # 1. Đọc ảnh gốc
-img = cv2.imread("../../data/toy_data/melanoma/ISIC_0000074.jpg")
+img = cv2.imread("../../data/toy_data/melanoma/ISIC_0000029.jpg")
 img = cv2.resize(img, (600, 450))
 
 # Tẩy góc ống kính (Dùng thông số tối ưu em vừa tìm được)
@@ -30,7 +30,7 @@ kmeans_mask = get_kmeans_mask(clahe_color_img, k=4)
 snakes_mask = get_snakes_mask(smooth_l_channel, kmeans_mask, num_iter=35)
 
 # ----------------- CHẤM ĐIỂM IOU ----------------------------
-gt_path = "../../data/toy_data/ground_truth/ISIC_0000074_segmentation.png"
+gt_path = "../../data/toy_data/ground_truth/ISIC_0000029_segmentation.png"
 gt_mask = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE)
 
 if gt_mask is not None:
