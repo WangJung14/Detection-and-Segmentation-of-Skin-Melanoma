@@ -1,4 +1,5 @@
 venv/
+venv_gpu/
 .idea/
 
 data/
@@ -6,3 +7,5 @@ data/
 __pycache__/
 .ipynb_checkpoints/
 *.pyc
+/best_model.pth
+/last_model.pth
