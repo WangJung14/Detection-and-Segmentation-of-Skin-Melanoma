@@ -47,8 +47,8 @@ Xây dựng mạng nơ-ron tích chập từ đầu để giải quyết bài to
 *   **Kiến trúc:** U-Net (Encoder - Bottleneck - Decoder) tích hợp Skip Connections để giữ nguyên vẹn chi tiết không gian ở cấp độ Pixel.
 *   **Dataset & DataLoader:** Class custom để nạp ảnh gốc (RGB) và Mask (Grayscale nhị phân), resize về chuẩn $256 \times 256$.
 *   **Training Pipeline:** 
-    *   **Hàm Loss:** Binary Cross Entropy with Logits (BCE).
-    *   **Optimizer:** Adam ($learning\_rate = 1e-3$).
+    *   **Hàm Loss:** BCE + Dice Loss (`BCEDiceLoss`).
+    *   **Optimizer:** AdamW (`learning rate = 1e-3`) kết hợp ReduceLROnPlateau Scheduler.
     *   **Chiến thuật:** Triển khai Proof of Concept trên Toy Dataset (18 ảnh cực khó) để xử lý bài toán Imbalanced Data, chứng minh pipeline hoạt động hoàn hảo trước khi scale lên bộ dữ liệu ISIC đầy đủ (6GB).
 
 ## 5. Báo Cáo Thực Nghiệm (Lab Report & Parameter Sweep)
@@ -61,17 +61,26 @@ Dự án có module tự động hóa việc khảo sát tham số nhằm minh c
 ## 6. Cấu Trúc Thư Mục (Folder Structure)
 
 ```text
-├── data/                       # Chứa tập dữ liệu (ISIC Dataset / Toy Dataset)
+├── data/                       # Chứa tập dữ liệu (ISIC 2017)
 │   ├── images/                 # Ảnh gốc
 │   └── ground_truth/           # Masks (Ground Truth)
 ├── src/                        # Chứa toàn bộ mã nguồn xử lý chính
 │   ├── preprocessing.py        # Các hàm tiền xử lý (DullRazor, CLAHE, ...)
 │   ├── segmentation.py         # K-Means, Morphological Snakes
-│   ├── dataset.py              # PyTorch Dataset & DataLoader
-│   └── unet_model.py           # Định nghĩa kiến trúc U-Net
-├── parameter_sweep.py          # Script khảo sát tham số tự động và xuất ảnh ghép
-├── train_unet.py               # Script huấn luyện mô hình U-Net
-├── test_unet.py                # Script chạy Inference mô hình học sâu và trực quan hóa
+│   ├── segmentation_tuning.py  # Điều chỉnh tham số cho phân đoạn
+│   ├── crop_tuning.py          # Script điều chỉnh cắt ảnh
+│   ├── tuning_station.py       # Tuning tổng hợp
+│   ├── features.py             # Trích xuất đặc trưng ABCD Rule
+│   ├── evaluation.py           # Đánh giá kết quả bằng IoU, Dice,...
+│   ├── parameter_sweep.py      # Script khảo sát tham số tự động và xuất ảnh ghép
+│   └── u_net/                  # Mô-đun Deep Learning (U-Net)
+│       ├── dataset.py          # PyTorch Dataset & DataLoader
+│       ├── loss.py             # Định nghĩa hàm loss (Dice, BCE+Dice)
+│       ├── metrics.py          # Đánh giá (Dice, IoU, Pixel Acc)
+│       ├── unet_model.py       # Định nghĩa kiến trúc U-Net
+│       ├── train_unet.py       # Script huấn luyện mô hình U-Net
+│       └── test_unet.py        # Script chạy Inference mô hình học sâu và trực quan hóa
+├── notebooks/                  # Các file Jupyter Notebook (nếu có)
 ├── main.py                     # Entry point chính của chương trình
 └── requirements.txt            # Danh sách thư viện phụ thuộc
 ```
