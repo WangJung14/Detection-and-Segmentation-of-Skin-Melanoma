@@ -5,7 +5,7 @@ import numpy as np
 from src.preprocessing import apply_circular_mask
 
 # 1. Đọc ảnh (Vẫn giữ resize để ảnh không tràn màn hình nhé)
-img = cv2.imread("../data/toy_data/melanoma/ISIC_0000074.jpg")
+img = cv2.imread(r"D:\Computer Vision Final Project\Src code\data\toy_data\melanoma\ISIC_0000036.jpg")
 img = cv2.resize(img, (600, 450))
 
 
