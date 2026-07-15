@@ -17,8 +17,8 @@ from src.u_net.metrics import evaluate_batch
 # Cấu hình
 ###########################################
 
-IMAGE_DIR = r"D:\Computer Vision Final Project\Src code\data\train\images"
-MASK_DIR = r"D:\Computer Vision Final Project\Src code\data\train\masks"
+IMAGE_DIR = r"D:\Computer Vision Final Project\Src code\data\raw\images"
+MASK_DIR = r"D:\Computer Vision Final Project\Src code\data\processed\masks"
 
 IMAGE_SIZE = 256
 
