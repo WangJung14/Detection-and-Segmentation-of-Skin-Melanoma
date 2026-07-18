@@ -37,7 +37,6 @@ def get_snakes_mask(gray_image, init_mask, num_iter=35):
         lambda2=1
     )
 
-    # --- ĐOẠN FIX LỖI Ở ĐÂY ---
     # 1. Chuyển kết quả sang mảng float64 trước
     res = snake_evolution.astype(np.float64)
     # 2. Nhân với 255
