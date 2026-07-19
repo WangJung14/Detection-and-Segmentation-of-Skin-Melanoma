@@ -2,14 +2,12 @@ import os
 import cv2
 import numpy as np
 import pandas as pd
-from skimage.measure import regionprops, label
 from tqdm import tqdm
 import argparse
 
 def compute_asymmetry(mask):
     """
     Computes Asymmetry (A) score.
-    Folds the mask along its major and minor axes and computes the non-overlapping area.
     Returns bucketized score: 0 (symmetric), 1 (asymmetric in 1 axis), 2 (asymmetric in 2 axes).
     """
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -21,24 +19,16 @@ def compute_asymmetry(mask):
     
     (x, y), (MA, ma), angle = cv2.fitEllipse(cnt)
     
-    # Calculate moments to get center
     M = cv2.moments(cnt)
     if M['m00'] == 0:
         return 0
     cx = int(M['m10']/M['m00'])
     cy = int(M['m01']/M['m00'])
     
-    # To simplify, we calculate the non-overlapping area when flipped horizontally and vertically
-    # relative to its center of mass. This is an approximation of asymmetry.
-    # A robust way: compare mask with itself rotated by 180 degrees.
     mask_rotated = cv2.warpAffine(mask, cv2.getRotationMatrix2D((cx, cy), 180, 1.0), mask.shape[::-1])
     diff = cv2.absdiff(mask, mask_rotated)
     non_overlap_ratio = np.sum(diff > 0) / (np.sum(mask > 0) + 1e-5)
     
-    # Bucketize: 
-    # < 0.1 -> 0 (symmetric)
-    # 0.1 - 0.3 -> 1 (1 axis)
-    # > 0.3 -> 2 (2 axes)
     if non_overlap_ratio < 0.1:
         return 0
     elif non_overlap_ratio < 0.3:
@@ -49,8 +39,6 @@ def compute_asymmetry(mask):
 def compute_border(mask):
     """
     Computes Border (B) score based on compactness.
-    Compactness = Perimeter^2 / (4 * pi * Area)
-    Bucketized to 0-8 scale.
     """
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
@@ -64,20 +52,13 @@ def compute_border(mask):
         
     compactness = (perimeter ** 2) / (4 * np.pi * area)
     
-    # Normal circle has compactness 1. Highly irregular shapes have higher values.
-    # Bucketize roughly to 0-8. (e.g. 1-2 -> 0, >9 -> 8)
     b_score = int(min((compactness - 1.0), 8.0))
     return max(0, b_score)
 
 def compute_color(image, mask):
     """
-    Computes Color (C) score.
-    Counts the number of distinct color ranges present in the lesion.
-    Bucketized to 1-6.
+    Computes Color (C) score based on standard deviation across RGB channels.
     """
-    # Use standard deviation of colors inside the mask as a proxy for color variance, 
-    # then map it to 1-6. Or properly bucketize colors.
-    # Here we use standard deviation across RGB channels.
     masked_img = cv2.bitwise_and(image, image, mask=mask)
     pixels = masked_img[mask > 0]
     
@@ -89,17 +70,13 @@ def compute_color(image, mask):
     std_b = np.std(pixels[:, 2])
     
     total_std = std_r + std_g + std_b
-    # Roughly mapping total_std to 1-6
-    # Assume max std is around 150 for each channel.
     c_score = int((total_std / 150.0) * 6) + 1
     c_score = min(max(c_score, 1), 6)
     return c_score
 
 def compute_diameter(mask):
     """
-    Computes Diameter (D) score.
-    Calculates the maximum diameter of the bounding box diagonal.
-    Bucketized to 1-5.
+    Computes Diameter (D) score based on bounding box diagonal.
     """
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
@@ -108,9 +85,6 @@ def compute_diameter(mask):
     x, y, w, h = cv2.boundingRect(cnt)
     diameter = np.sqrt(w**2 + h**2)
     
-    # Assuming typical image resolution, e.g., 600px width. 
-    # We map pixel diameter to 1-5 score. 
-    # Let's say max diameter is 1000 pixels.
     d_score = int((diameter / 200.0)) + 1
     d_score = min(max(d_score, 1), 5)
     return d_score
@@ -122,7 +96,6 @@ def extract_features(img_dir, mask_dir, output_csv):
     results = []
     
     img_files = [f for f in os.listdir(img_dir) if f.endswith('.jpg')]
-    
     print(f"Found {len(img_files)} images in {img_dir}. Starting extraction...")
     
     for img_name in tqdm(img_files):
@@ -137,7 +110,6 @@ def extract_features(img_dir, mask_dir, output_csv):
         img = cv2.imread(img_path)
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         
-        # Ensure mask is binary
         _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
         
         a_score = compute_asymmetry(mask)

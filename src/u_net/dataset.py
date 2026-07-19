@@ -6,7 +6,6 @@ from PIL import Image
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-
 class SkinCancerDataset(Dataset):
     """
     Dataset dành cho Skin Lesion Segmentation (ISIC)
@@ -26,18 +25,12 @@ class SkinCancerDataset(Dataset):
         Kích thước ảnh đầu ra (mặc định 256x256)
     """
 
-    def __init__(self,
-                 image_dir,
-                 mask_dir,
-                 train=True,
-                 image_size=256):
-
+    def __init__(self, image_dir, mask_dir, train=True, image_size=256):
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.train = train
         self.image_size = image_size
 
-        # Sửa lại phần khởi tạo list images một chút để kiểm tra chéo
         valid_images = []
         for file in sorted(os.listdir(image_dir)):
             if file.endswith(".jpg"):
@@ -48,39 +41,27 @@ class SkinCancerDataset(Dataset):
                     print(f"⚠️ Cảnh báo: Ảnh {file} không có Mask đi kèm. Đã bỏ qua!")
         self.images = valid_images
 
-        # Mean / Std của ImageNet để chuẩn hóa dữ liệu
         self.mean = [0.485, 0.456, 0.406]
         self.std = [0.229, 0.224, 0.225]
 
-        # Nhóm A: Biến đổi Không gian & Hình học (Geometric)
-        # Nhóm B: Biến đổi Quang học & Màu sắc (Photometric)
         self.train_transform = A.Compose([
             A.Resize(height=self.image_size, width=self.image_size),
-            
-            # Nhóm A: Biến đổi Không gian & Hình học
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.5),
             A.ShiftScaleRotate(shift_limit=0.06, scale_limit=0.1, rotate_limit=180, p=0.8),
             A.ElasticTransform(alpha=1, sigma=50, p=0.3),
-            
-            # Nhóm B: Biến đổi Quang học & Màu sắc
             A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
             A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=20, p=0.5),
             A.GaussianBlur(blur_limit=(3, 7), p=0.2),
-            
-            # Chuẩn hóa ImageNet & Chuyển sang Tensor PyTorch
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])
         
-        # Pipeline cho tập validation/test (chỉ Resize, Normalize và ToTensor)
         self.val_transform = A.Compose([
             A.Resize(height=self.image_size, width=self.image_size),
             A.Normalize(mean=self.mean, std=self.std),
             ToTensorV2()
         ])
-
-
 
     def __len__(self):
         return len(self.images)
@@ -91,23 +72,18 @@ class SkinCancerDataset(Dataset):
         mask_name = img_name.replace(".jpg", "_segmentation.png")
         mask_path = os.path.join(self.mask_dir, mask_name)
 
-        # Đọc ảnh gốc bằng PIL và chuyển sang numpy array (RGB)
         image = np.array(Image.open(image_path).convert("RGB"))
-        # Đọc mask bằng PIL và chuyển sang numpy array (Grayscale)
         mask = np.array(Image.open(mask_path).convert("L"))
 
-        # Lựa chọn pipeline transform tương ứng
         transform = self.train_transform if self.train else self.val_transform
         augmented = transform(image=image, mask=mask)
         
         image = augmented['image']
         mask = augmented['mask']
 
-        # Đảm bảo mask là dạng Tensor nhị phân 0.0 hoặc 1.0 và có kích thước channel (1, H, W)
         if mask.dim() == 2:
             mask = mask.unsqueeze(0)
             
-        # Chuyển đổi sang float nhị phân (0.0 và 1.0) bất kể kiểu dữ liệu gốc
         if mask.max() > 1:
             mask = (mask > 127).float()
         else:

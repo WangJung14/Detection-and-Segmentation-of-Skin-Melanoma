@@ -12,7 +12,6 @@ def fetch_metadata(image_id):
             data = response.json()
             if data['count'] > 0:
                 meta = data['results'][0].get('metadata', {}).get('clinical', {})
-                # Try to get the diagnosis. Sometimes it's in diagnosis, diagnosis_1, diagnosis_3, etc.
                 diag = meta.get('diagnosis_1') or meta.get('diagnosis') or meta.get('benign_malignant') or meta.get('diagnosis_3') or 'unknown'
                 return {'image_id': image_id, 'diagnosis': diag}
     except Exception as e:
@@ -27,7 +26,6 @@ def fetch_all(features_csv, output_csv):
     results = []
     
     start_time = time.time()
-    # Use ThreadPoolExecutor for concurrent requests
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
         future_to_id = {executor.submit(fetch_metadata, img_id): img_id for img_id in image_ids}
         for count, future in enumerate(concurrent.futures.as_completed(future_to_id), 1):

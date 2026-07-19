@@ -28,15 +28,12 @@ def generate_visuals(train_csv, test_csv):
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # Train SVM with class weight balanced
     svm = SVC(kernel='linear', class_weight='balanced', random_state=42)
     svm.fit(X_train_scaled, y_train)
     
-    # Predictions
     svm_pred = svm.predict(X_test_scaled)
     tds_pred = evaluate_tds(df_test)
     
-    # Metrics
     metrics_names = ['Accuracy', 'Precision', 'Recall', 'F1 Score']
     
     tds_metrics = [
@@ -53,7 +50,6 @@ def generate_visuals(train_csv, test_csv):
         f1_score(y_test, svm_pred, zero_division=0)
     ]
     
-    # 1. Plot Metrics Comparison
     x = np.arange(len(metrics_names))
     width = 0.35
     
@@ -75,7 +71,6 @@ def generate_visuals(train_csv, test_csv):
     plt.savefig('data/Metrics_Comparison.png', dpi=300)
     print("Saved data/Metrics_Comparison.png")
     
-    # 2. Confusion Matrices
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     
     cm_tds = confusion_matrix(y_test, tds_pred)

@@ -10,10 +10,7 @@ def evaluate_tds(df):
     """
     Evaluates the Heuristic TDS Formula on a given dataset.
     """
-    # TDS = 1.3*A + 0.1*B + 0.5*C + 0.5*D
     tds_score = 1.3 * df['A_score'] + 0.1 * df['B_score'] + 0.5 * df['C_score'] + 0.5 * df['D_score']
-    
-    # Predict based on threshold
     tds_pred = (tds_score > 5.45).astype(int)
     
     acc = accuracy_score(df['Label'], tds_pred)
@@ -49,16 +46,13 @@ def train_and_evaluate(train_csv, test_csv, output_plot):
     print(f"F1 Score:  {tds_f1:.4f}")
     
     print("\n--- LUỒNG 2: AI (Linear SVM) ---")
-    # Chuẩn hóa
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # Huấn luyện
-    svm = SVC(kernel='linear', random_state=42)
+    svm = SVC(kernel='linear', class_weight='balanced', random_state=42)
     svm.fit(X_train_scaled, y_train)
     
-    # Đánh giá
     svm_pred = svm.predict(X_test_scaled)
     svm_acc = accuracy_score(y_test, svm_pred)
     svm_prec = precision_score(y_test, svm_pred, zero_division=0)
@@ -77,30 +71,24 @@ def train_and_evaluate(train_csv, test_csv, output_plot):
         print(">> TDS hiệu quả hơn hoặc bằng SVM (Accuracy cao hơn hoặc bằng).")
         
     print("\n--- GIAI ĐOẠN 4: TRÍCH XUẤT TRỌNG SỐ VÀ VẼ BÁO CÁO ---")
-    # Lấy trọng số (dùng absolute value cho SVM vì trọng số có thể âm, ảnh hưởng ngược chiều)
     svm_weights = np.abs(svm.coef_[0])
-    
-    # Trọng số bác sĩ
     tds_weights = np.array([1.3, 0.1, 0.5, 0.5])
     
-    # Quy đổi về %
     svm_weights_pct = (svm_weights / np.sum(svm_weights)) * 100
     tds_weights_pct = (tds_weights / np.sum(tds_weights)) * 100
     
     print("Trọng số SVM (A, B, C, D) %:", svm_weights_pct)
     print("Trọng số TDS (A, B, C, D) %:", tds_weights_pct)
     
-    # Vẽ Horizontal Bar Chart
     labels = ['Asymmetry (A)', 'Border (B)', 'Color (C)', 'Diameter (D)']
     y = np.arange(len(labels))
     height = 0.35
     
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    rects1 = ax.barh(y + height/2, svm_weights_pct, height, label='AI (Linear SVM)', color='skyblue')
+    rects1 = ax.barh(y + height/2, svm_weights_pct, height, label='AI (Linear SVM Balanced)', color='skyblue')
     rects2 = ax.barh(y - height/2, tds_weights_pct, height, label='Bác sĩ (TDS)', color='lightcoral')
     
-    # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_xlabel('Mức độ quan trọng (%)')
     ax.set_title('So sánh Trọng số Đặc trưng: AI (SVM) vs. Bác sĩ (TDS)')
     ax.set_yticks(y)
