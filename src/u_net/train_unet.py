@@ -13,9 +13,9 @@ from src.u_net.loss import BCEDiceLoss
 from src.u_net.metrics import evaluate_batch
 
 
-###########################################
-# Cấu hình
-###########################################
+
+
+
 
 TRAIN_IMAGE_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1-2_Training_Input\ISIC2018_Task1-2_Training_Input"
 TRAIN_MASK_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1_Training_GroundTruth\ISIC2018_Task1_Training_GroundTruth"
@@ -31,9 +31,9 @@ PATIENCE = 10
 SEED = 42
 
 
-###########################################
-# Train Function
-###########################################
+
+
+
 
 def train():
 
@@ -43,14 +43,14 @@ def train():
 
     print(f"Training on {device}")
 
-    ###########################################
-    # Dataset
-    ###########################################
+    
+    
+    
 
-    # Dataset dùng để train (có augmentation)
+    
     train_dataset = SkinCancerDataset(TRAIN_IMAGE_DIR, TRAIN_MASK_DIR, train=True, image_size=IMAGE_SIZE)
 
-    # Dataset dùng để validate (không augmentation)
+    
     val_dataset = SkinCancerDataset(VAL_IMAGE_DIR, VAL_MASK_DIR, train=False, image_size=IMAGE_SIZE)
 
     train_loader = DataLoader(
@@ -70,24 +70,24 @@ def train():
     print(f"Train images : {len(train_dataset)}")
     print(f"Validation   : {len(val_dataset)}")
 
-    ###########################################
-    # Model
-    ###########################################
+    
+    
+    
 
     model = UNet(
         in_channels=3,
         out_channels=1
     ).to(device)
 
-    ###########################################
-    # Loss
-    ###########################################
+    
+    
+    
 
     criterion = BCEDiceLoss()
 
-    ###########################################
-    # Optimizer
-    ###########################################
+    
+    
+    
 
     optimizer = optim.AdamW(
         model.parameters(),
@@ -95,9 +95,9 @@ def train():
         weight_decay=1e-4
     )
 
-    ###########################################
-    # Scheduler
-    ###########################################
+    
+    
+    
 
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
@@ -106,15 +106,15 @@ def train():
         patience=3,
     )
 
-    ###########################################
-    # AMP
-    ###########################################
+    
+    
+    
 
     scaler = GradScaler("cuda")
 
-    ###########################################
-    # History
-    ###########################################
+    
+    
+    
 
     train_loss_history = []
     val_loss_history = []
@@ -125,9 +125,9 @@ def train():
 
     pixel_acc_history = []
 
-    ###########################################
-    # Best Model
-    ###########################################
+    
+    
+    
 
     best_model = copy.deepcopy(model.state_dict())
 
@@ -135,17 +135,17 @@ def train():
 
     early_stop_counter = 0
 
-    ###########################################
-    # Training Loop
-    ###########################################
+    
+    
+    
 
     for epoch in range(EPOCHS):
 
         print(f"\n========== Epoch [{epoch + 1}/{EPOCHS}] ==========")
 
-        #######################################
-        # TRAIN
-        #######################################
+        
+        
+        
 
         model.train()
 
@@ -180,9 +180,9 @@ def train():
 
         train_loss_history.append(train_loss)
 
-        #######################################
-        # VALIDATION
-        #######################################
+        
+        
+        
 
         model.eval()
 
@@ -215,9 +215,9 @@ def train():
                 if (step + 1) % 50 == 0 or (step + 1) == len(val_loader):
                     print(f"  [Val] Step [{step + 1}/{len(val_loader)}] | Loss: {loss.item():.4f}")
 
-        #######################################
-        # Epoch Statistics
-        #######################################
+        
+        
+        
 
         val_loss = val_running_loss / len(val_loader)
 
@@ -255,9 +255,9 @@ def train():
 
         print(f"Learning Rate : {current_lr:.6f}")
 
-        #######################################
-        # Save Best Model
-        #######################################
+        
+        
+        
 
         if dice > best_dice:
 
@@ -279,18 +279,18 @@ def train():
                 f"No improvement ({early_stop_counter}/{PATIENCE})"
             )
 
-        #######################################
-        # Early Stopping
-        #######################################
+        
+        
+        
 
         if early_stop_counter >= PATIENCE:
             print("\nEarly stopping activated.")
 
             break
 
-    ###########################################
-    # Save Last Model
-    ###########################################
+    
+    
+    
 
     torch.save(model.state_dict(), "last_model.pth")
 
@@ -298,9 +298,9 @@ def train():
 
     print(f"Best Dice Score : {best_dice:.4f}")
 
-    ###########################################
-    # Plot Loss
-    ###########################################
+    
+    
+    
 
     plt.figure(figsize=(8, 5))
 
@@ -320,9 +320,9 @@ def train():
 
     plt.savefig("loss_curve.png")
 
-    ###########################################
-    # Plot Dice
-    ###########################################
+    
+    
+    
 
     plt.figure(figsize=(8, 5))
 
@@ -340,9 +340,9 @@ def train():
 
     plt.savefig("dice_curve.png")
 
-    ###########################################
-    # Plot IoU
-    ###########################################
+    
+    
+    
 
     plt.figure(figsize=(8, 5))
 
@@ -360,9 +360,9 @@ def train():
 
     plt.savefig("iou_curve.png")
 
-    ###########################################
-    # Plot Pixel Accuracy
-    ###########################################
+    
+    
+    
 
     plt.figure(figsize=(8, 5))
 
@@ -381,9 +381,9 @@ def train():
     plt.savefig("pixel_accuracy_curve.png")
 
 
-###########################################
-# Main
-###########################################
+
+
+
 
 if __name__ == "__main__":
     train()

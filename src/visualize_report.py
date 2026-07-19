@@ -14,7 +14,7 @@ def plot_bar_chart(unet_csv, trad_csv, output_dir):
     
     metrics = ['IoU', 'Dice', 'Accuracy', 'Sensitivity', 'Specificity']
     
-    # Calculate means
+    
     unet_means = df_unet[metrics].mean().values
     trad_means = df_trad[metrics].mean().values
     
@@ -32,7 +32,7 @@ def plot_bar_chart(unet_csv, trad_csv, output_dir):
     ax.set_ylim(0, 1.1)
     ax.legend()
     
-    # Add values on top of bars
+    
     ax.bar_label(rects1, padding=3, fmt='%.3f')
     ax.bar_label(rects2, padding=3, fmt='%.3f')
     
@@ -65,10 +65,10 @@ def run_error_analysis(trad_csv, img_dir, gt_dir, output_dir):
     os.makedirs(error_cases_dir, exist_ok=True)
     
     df_trad = pd.read_csv(trad_csv)
-    # Bước 1: Lọc dữ liệu, sort IoU tăng dần, lấy 3 ảnh kém nhất
+    
     worst_3 = df_trad.sort_values(by='IoU', ascending=True).head(3)
     
-    # Load U-Net Model
+    
     unet_weight = r"D:\Computer Vision Final Project\Src code\best_model.pth"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     inferencer = UNetInferencer(unet_weight, device)
@@ -90,17 +90,17 @@ def run_error_analysis(trad_csv, img_dir, gt_dir, output_dir):
             
         h_orig, w_orig = bgr_image.shape[:2]
         
-        # Predict U-Net
+        
         unet_mask = inferencer.predict(bgr_image)
         
-        # Predict Traditional
+        
         small_bgr = cv2.resize(bgr_image, (256, 256))
         small_gray = cv2.cvtColor(small_bgr, cv2.COLOR_BGR2GRAY)
         init_mask = get_kmeans_mask(small_bgr, k=3)
         small_pred_mask = get_snakes_mask(small_gray, init_mask)
         trad_mask = cv2.resize(small_pred_mask, (w_orig, h_orig), interpolation=cv2.INTER_NEAREST)
         
-        # Bước 2: Ghép 4 ảnh (Subplot)
+        
         fig, axs = plt.subplots(1, 4, figsize=(16, 4))
         
         axs[0].imshow(rgb_image)
@@ -134,9 +134,9 @@ if __name__ == "__main__":
     TEST_IMG_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1-2_Test_Input\ISIC2018_Task1-2_Test_Input"
     TEST_GT_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1_Test_GroundTruth\ISIC2018_Task1_Test_GroundTruth"
     
-    # Run Visualization
+    
     plot_bar_chart(UNET_CSV, TRAD_CSV, RESULTS_DIR)
     plot_boxplot(UNET_CSV, TRAD_CSV, RESULTS_DIR)
     
-    # Run Error Analysis
+    
     run_error_analysis(TRAD_CSV, TEST_IMG_DIR, TEST_GT_DIR, RESULTS_DIR)

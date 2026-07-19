@@ -3,7 +3,7 @@ import sys
 import torch
 import matplotlib.pyplot as plt
 
-# Đảm bảo import được từ thư mục src
+
 sys.path.append(os.path.abspath('.'))
 
 import io
@@ -25,7 +25,7 @@ def main():
     image_dir = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1-2_Training_Input\ISIC2018_Task1-2_Training_Input"
     mask_dir = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1_Training_GroundTruth\ISIC2018_Task1_Training_GroundTruth"
     
-    # 1. Khởi tạo Dataset với train=True để kích hoạt Data Augmentation
+    
     dataset = SkinCancerDataset(image_dir=image_dir, mask_dir=mask_dir, train=True, image_size=256)
     
     print(f"Tổng số ảnh trong dataset: {len(dataset)}")
@@ -33,29 +33,29 @@ def main():
         print("Lỗi: Không tìm thấy ảnh")
         return
 
-    # 2. Plot thử 10 cặp [Ảnh Augmented - Mask Augmented]
+    
     num_samples = min(10, len(dataset))
     fig, axes = plt.subplots(num_samples, 2, figsize=(10, 3 * num_samples))
     fig.suptitle("Unit Test: Khảo sát 10 Cặp Ảnh & Mask Sau Khi Data Augmentation (Albumentations)", fontsize=14, y=0.99)
 
     for i in range(num_samples):
-        # Lấy mẫu ngẫu nhiên hoặc tuần tự
+        
         image, mask = dataset[i]
         
-        # Đưa ảnh về dạng numpy HWC để vẽ
+        
         image_img = denormalize(image).permute(1, 2, 0).numpy()
         mask_img = mask.squeeze(0).numpy()
         
-        # Kiểm tra tính nhị phân của Mask (chỉ chứa 0 và 1)
+        
         unique_vals = torch.unique(mask)
         print(f"Mẫu {i+1} | Giá trị duy nhất trong Mask: {unique_vals.tolist()} | Kiểu dữ liệu: {mask.dtype}")
         
-        # Vẽ Ảnh Augmented
+        
         axes[i, 0].imshow(image_img)
         axes[i, 0].set_title(f"Ảnh Augmented {i+1}")
         axes[i, 0].axis("off")
         
-        # Vẽ Mask Augmented (nhị phân 0 và 255 ở dạng hiển thị)
+        
         axes[i, 1].imshow(mask_img, cmap="gray")
         axes[i, 1].set_title(f"Mask Augmented {i+1} (Nhị phân 0-255)")
         axes[i, 1].axis("off")

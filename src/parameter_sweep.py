@@ -116,7 +116,7 @@ def sweep_snakes(img, gt_mask):
 
 def sweep_abcd_compactness(img, mask):
     """Khảo sát độ nhạy của thuật toán chấm điểm B (Border / Compactness)"""
-    # Compactness = 1 là tròn hoàn hảo
+    
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnt = max(contours, key=cv2.contourArea)
     A = cv2.contourArea(cnt)

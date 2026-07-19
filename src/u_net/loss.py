@@ -18,7 +18,7 @@ class DiceLoss(nn.Module):
 
     def forward(self, predictions, targets):
 
-        # BCEWithLogits -> output chưa qua Sigmoid
+        
         predictions = torch.sigmoid(predictions)
 
         predictions = predictions.contiguous().view(-1)
