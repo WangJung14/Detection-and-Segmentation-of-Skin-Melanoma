@@ -17,21 +17,17 @@ from src.u_net.metrics import evaluate_batch
 # Cấu hình
 ###########################################
 
-IMAGE_DIR = r"D:\Computer Vision Final Project\Src code\data\train\images"
-MASK_DIR = r"D:\Computer Vision Final Project\Src code\data\train\masks"
+TRAIN_IMAGE_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1-2_Training_Input\ISIC2018_Task1-2_Training_Input"
+TRAIN_MASK_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1_Training_GroundTruth\ISIC2018_Task1_Training_GroundTruth"
+
+VAL_IMAGE_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1-2_Validation_Input\ISIC2018_Task1-2_Validation_Input"
+VAL_MASK_DIR = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1_Validation_GroundTruth\ISIC2018_Task1_Validation_GroundTruth"
 
 IMAGE_SIZE = 256
-
 BATCH_SIZE = 4
-
 EPOCHS = 100
-
 LEARNING_RATE = 1e-3
-
-TRAIN_RATIO = 0.8
-
 PATIENCE = 10
-
 SEED = 42
 
 
@@ -52,25 +48,10 @@ def train():
     ###########################################
 
     # Dataset dùng để train (có augmentation)
-    train_full = SkinCancerDataset(IMAGE_DIR, MASK_DIR, train=True)
+    train_dataset = SkinCancerDataset(TRAIN_IMAGE_DIR, TRAIN_MASK_DIR, train=True, image_size=IMAGE_SIZE)
 
     # Dataset dùng để validate (không augmentation)
-    val_full = SkinCancerDataset(IMAGE_DIR, MASK_DIR, train=False)
-
-    n = len(train_full)
-
-    rng = np.random.default_rng(SEED)
-    indices = rng.permutation(n)
-
-    train_size = int(TRAIN_RATIO * n)
-    train_idx = indices[:train_size]
-    val_idx = indices[train_size:]
-
-    # Subset của train_full (có augmentation) cho phần train
-    train_dataset = Subset(train_full, train_idx)
-
-    # Subset của val_full (không augmentation) cho phần validation
-    val_dataset = Subset(val_full, val_idx)
+    val_dataset = SkinCancerDataset(VAL_IMAGE_DIR, VAL_MASK_DIR, train=False, image_size=IMAGE_SIZE)
 
     train_loader = DataLoader(
         train_dataset,
@@ -160,6 +141,8 @@ def train():
 
     for epoch in range(EPOCHS):
 
+        print(f"\n========== Epoch [{epoch + 1}/{EPOCHS}] ==========")
+
         #######################################
         # TRAIN
         #######################################
@@ -168,7 +151,7 @@ def train():
 
         running_loss = 0.0
 
-        for images, masks in train_loader:
+        for step, (images, masks) in enumerate(train_loader):
 
             images = images.to(device)
 
@@ -190,6 +173,9 @@ def train():
 
             running_loss += loss.item()
 
+            if (step + 1) % 50 == 0 or (step + 1) == len(train_loader):
+                print(f"  [Train] Step [{step + 1}/{len(train_loader)}] | Loss: {loss.item():.4f}")
+
         train_loss = running_loss / len(train_loader)
 
         train_loss_history.append(train_loss)
@@ -206,9 +192,10 @@ def train():
         iou_total = 0.0
         pixel_acc_total = 0.0
 
+        print("  Evaluating on validation set...")
         with torch.no_grad():
 
-            for images, masks in val_loader:
+            for step, (images, masks) in enumerate(val_loader):
                 images = images.to(device)
                 masks = masks.to(device)
 
@@ -224,6 +211,9 @@ def train():
                 dice_total += metrics["dice"]
                 iou_total += metrics["iou"]
                 pixel_acc_total += metrics["pixel_acc"]
+
+                if (step + 1) % 50 == 0 or (step + 1) == len(val_loader):
+                    print(f"  [Val] Step [{step + 1}/{len(val_loader)}] | Loss: {loss.item():.4f}")
 
         #######################################
         # Epoch Statistics

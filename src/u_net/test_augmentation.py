@@ -22,15 +22,15 @@ def denormalize(tensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]):
     return torch.clamp(t, 0, 1)
 
 def main():
-    image_dir = r"data/train/images"
-    mask_dir = r"data/train/masks"
+    image_dir = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1-2_Training_Input\ISIC2018_Task1-2_Training_Input"
+    mask_dir = r"D:\Computer Vision Final Project\Src code\data\data_classification\ISIC2018_Task1_Training_GroundTruth\ISIC2018_Task1_Training_GroundTruth"
     
     # 1. Khởi tạo Dataset với train=True để kích hoạt Data Augmentation
     dataset = SkinCancerDataset(image_dir=image_dir, mask_dir=mask_dir, train=True, image_size=256)
     
     print(f"Tổng số ảnh trong dataset: {len(dataset)}")
     if len(dataset) == 0:
-        print("Lỗi: Không tìm thấy ảnh trong thư mục data/train/images!")
+        print("Lỗi: Không tìm thấy ảnh")
         return
 
     # 2. Plot thử 10 cặp [Ảnh Augmented - Mask Augmented]
